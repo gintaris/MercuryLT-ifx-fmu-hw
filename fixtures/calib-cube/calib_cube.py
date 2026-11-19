@@ -21,13 +21,14 @@
 # Output (next to this file, in out/<variant>/):
 #   calib_cube_<variant>_base.step/.stl, calib_cube_<variant>_lid.step/.stl
 #
-# Dimensions marked MEASURE are estimates: no mechanical drawing of the
-# boards was available. Measure the board with a caliper and correct them
-# before printing.
+# Each dimension says where it comes from. ESTIMATE / MEASURE marks the
+# values that are not taken from vendor design data; check them with a
+# caliper before printing.
 #
 # Cube frame used below: Xc along the board's long side, Yc along its short
-# side, Zc up (component side up, lid on top). Board origin = the board
-# corner at (-Xc, -Yc); hole positions are measured from that corner.
+# side, Zc up (component side up, lid on top). Board coordinates: origin at
+# the board corner (-Xc, -Yc), seen from the component side; all positions
+# (holes, shield, USB) are in this frame.
 
 import os
 import sys
@@ -61,8 +62,8 @@ COMMON = {
     "lid_screw_head_h": 3.2,
     "lid_pilot_d": 2.5,      # pilot hole in the base corners (M3 self-tapping)
     "lid_pilot_depth": 12.0,
-    "board_pilot_d": 2.2,    # pilot hole in standoffs (M2.5 self-tapping)
-    "standoff_d": 6.0,
+    "board_pilot_d": 2.2,    # pilot hole in standoffs (M2.5 self-tapping);
+    "standoff_d": 6.0,       # a variant can override both
     "label_size": 10.0,      # label text height
     "label_depth": 0.8,      # engraving depth
     "fonts": [               # first existing font is used for the labels
@@ -80,34 +81,58 @@ COMMON = {
 # ---------------------------------------------------------------------------
 
 VARIANTS = {
-    # KIT_PSC3M5_EVK with a Rutronik RAB7-SENSORFUSION Arduino shield.
+    # KIT_PSC3M5_EVK (Rev 5.0) with a Rutronik RAB7-SENSORFUSION shield.
+    #
+    # Sources:
+    #   [A] Infineon KIT_PSC3M5_EVK_Rev5.0_artwork.pdf (pcbdesigndata zip),
+    #       1:1 plots: silkscreen top (outline), soldermask top (holes,
+    #       pads). Checked: Arduino header pitch 2.54 mm, header rows
+    #       48.30 mm apart (Uno: 48.26).
+    #   [B] Infineon KIT_PSC3M5_EVK_Rev5.0_BOM.xlsm.
+    #   [C] Rutronik RAB7-SENSORFUSION_PCB.step and Mechanical Drawing.PDF
+    #       (github.com/RutronikSystemSolutions/RAB7_SENSORFUSION_Hardware_Files).
     "psc3_rab7": {
         "name": "KIT_PSC3M5_EVK + RAB7-SENSORFUSION",
-        "board_l": 120.0,           # MEASURE: long side
-        "board_w": 80.0,            # MEASURE: short side
-        "board_t": 1.6,             # MEASURE: PCB thickness
-        "below_h": 4.0,             # MEASURE: tallest part / pin under the board
-        "above_h": 22.0,            # MEASURE: top of shield parts above the EVK
-                                    # top (headers ~11 + shield PCB 1.6 + parts)
-        "holes": [                  # MEASURE: mounting holes (x, y) from corner
-            (4.0, 4.0), (116.0, 4.0), (4.0, 76.0), (116.0, 76.0),
-        ],
-        # USB cable slot (KitProg3 USB-C): wall, centre along that wall from
-        # the board centre, slot width, and connector centre height above
-        # the board top. MEASURE all four.
-        "usb_wall": "-Xc",
-        "usb_offset": 0.0,
-        "usb_w": 14.0,
-        "usb_z": 1.6,
-        # Face labels = sensor axis that points out of the face. From the
-        # BMI323 test on this board (2026-11-19): standing on the USB short
-        # edge gives +Y up, so the USB end face is -Y; the long edges are
-        # +-X; Z points up through the shield. VERIFY which long edge is +X.
-        "labels": {"+Xc": "+Y", "-Xc": "-Y", "+Yc": "+X", "-Yc": "-X",
+        "board_l": 130.0,           # [A] outline 130.00 x 70.00, corners R2.54
+        "board_w": 70.0,            # [A]
+        "board_t": 1.6,             # ESTIMATE: nominal, not in [A]
+        "below_h": 4.0,             # ESTIMATE: through-hole tails under the
+                                    # board (no bottom-side parts in [A])
+        # Top of the stack above the EVK top surface: EVK Arduino sockets
+        # 8.5 [B: Wurth 61300811821 / 61301011821, height per Wurth data]
+        # + RAB7 PCB 1.64 [C] + RAB7 stackable sockets 8.50 above the RAB7
+        # [C] = 18.64. Tallest other EVK part: DC jack J20 PJ-102A, 11 [B].
+        "above_h": 18.64,
+        # Unplated mounting holes, 2.2 mm (M2) [A: soldermask top]
+        "holes": [(3.97, 59.84), (3.97, 9.45), (114.02, 62.69)],
+        "board_pilot_d": 1.6,       # M2 self-tapping into the printed post
+        "standoff_d": 5.0,
+        # Parts that reach beyond the board outline and must fit inside the
+        # cavity, as (x0, y0, x1, y1) in board coordinates.
+        # RAB7 outline 72.30 x 71.78 [C], placed by its header sockets on
+        # the Uno grid of the EVK headers J1-J4 [A]: it overhangs the EVK
+        # by about 0.9 mm on both long edges.
+        "footprint": [(46.19, -0.95, 118.49, 70.83)],
+        # KitProg3 USB-C J15 (Wurth 629722000214, top mount, right angle)
+        # on the right short edge [A: pads at x 121.9-128.5, y 22.4-37.3];
+        # usb_at = slot centre along that wall in board coordinates.
+        "usb_wall": "+Xc",
+        "usb_at": 29.85,
+        "usb_w": 14.0,              # cable plug over-moulding + clearance
+        "usb_z": 1.6,               # connector centre above the board top
+        # Face labels = sensor axis that points out of the face.
+        # BMI323 (U6 on the RAB7, 3.0 x 2.5 mm, long side along the board's
+        # long side [C]) measured on this stack on 2026-11-19: USB edge down
+        # gives +Y up, so +Y points away from the USB edge (board -x); Z is
+        # up through the shield; the frame is right-handed (gyro Z sign
+        # checked), so +X = Y x Z points to the long edge at board y = 70.
+        "labels": {"+Xc": "-Y", "-Xc": "+Y", "+Yc": "+X", "-Yc": "-X",
                    "+Zc": "+Z", "-Zc": "-Z"},
     },
 
     # KIT_PSE84_AI (on-board BMI270, BMM350, DPS368, SHT40).
+    # No layout data: the available Infineon PDF (630-60751-01) contains the
+    # schematics only. All values are MEASURE estimates.
     "pse84": {
         "name": "KIT_PSE84_AI",
         "board_l": 85.0,            # MEASURE
@@ -119,8 +144,9 @@ VARIANTS = {
         "holes": [                  # MEASURE
             (3.5, 3.5), (81.5, 3.5), (3.5, 52.5), (81.5, 52.5),
         ],
+        "footprint": [],
         "usb_wall": "-Xc",          # MEASURE: KitProg3 USB-C position
-        "usb_offset": 0.0,
+        "usb_at": 28.0,             # MEASURE: along the wall, board coords
         "usb_w": 14.0,
         "usb_z": 1.6,
         # VERIFY on hardware: rest the cube on each face and check which
@@ -179,9 +205,18 @@ def build(variant_key):
     clr = c["clearance"]
     tol = c["fit_tol"]
 
+    pilot_d = p.get("board_pilot_d", c["board_pilot_d"])
+    standoff_d = p.get("standoff_d", c["standoff_d"])
+
+    # Footprint: the board plus everything that overhangs it (shield)
+    fx0, fy0, fx1, fy1 = 0.0, 0.0, p["board_l"], p["board_w"]
+    for (x0, y0, x1, y1) in p.get("footprint", []):
+        fx0, fy0 = min(fx0, x0), min(fy0, y0)
+        fx1, fy1 = max(fx1, x1), max(fy1, y1)
+
     # Inner space needed by the board stack
-    inner_l = p["board_l"] + 2 * clr
-    inner_w = p["board_w"] + 2 * clr
+    inner_l = (fx1 - fx0) + 2 * clr
+    inner_w = (fy1 - fy0) + 2 * clr
     standoff_h = p["below_h"] + 1.0
     inner_h = standoff_h + p["board_t"] + p["above_h"] + c["lid_lip_h"] + clr
 
@@ -190,9 +225,9 @@ def build(variant_key):
     side = inner + 2 * wall
     base_h = side - wall              # the lid is one wall thick
 
-    # Board placement: centred in XY, on standoffs above the floor
-    bx0 = (side - p["board_l"]) / 2.0
-    by0 = (side - p["board_w"]) / 2.0
+    # Board placement: footprint centred in XY, board on standoffs
+    bx0 = (side - (fx1 - fx0)) / 2.0 - fx0
+    by0 = (side - (fy1 - fy0)) / 2.0 - fy0
     board_bottom = wall + standoff_h
     board_top = board_bottom + p["board_t"]
 
@@ -204,10 +239,10 @@ def build(variant_key):
     # Standoffs with pilot holes at the board mounting holes
     for (hx, hy) in p["holes"]:
         cx, cy = bx0 + hx, by0 + hy
-        post = Part.makeCylinder(c["standoff_d"] / 2.0, standoff_h,
+        post = Part.makeCylinder(standoff_d / 2.0, standoff_h,
                                  V(cx, cy, wall))
         base = base.fuse(post)
-        pilot = Part.makeCylinder(c["board_pilot_d"] / 2.0, standoff_h + 1.0,
+        pilot = Part.makeCylinder(pilot_d / 2.0, standoff_h + 1.0,
                                   V(cx, cy, wall))
         base = base.cut(pilot)
 
@@ -225,12 +260,12 @@ def build(variant_key):
     slot_h = base_h - slot_bottom + 1.0
     wall_key = p["usb_wall"]
     if wall_key in ("-Xc", "+Xc"):
-        y0 = side / 2.0 + p["usb_offset"] - p["usb_w"] / 2.0
+        y0 = by0 + p["usb_at"] - p["usb_w"] / 2.0
         x0 = -1.0 if wall_key == "-Xc" else side - wall - 1.0
         slot = Part.makeBox(wall + 2.0, p["usb_w"], slot_h,
                             V(x0, y0, slot_bottom))
     else:
-        x0 = side / 2.0 + p["usb_offset"] - p["usb_w"] / 2.0
+        x0 = bx0 + p["usb_at"] - p["usb_w"] / 2.0
         y0 = -1.0 if wall_key == "-Yc" else side - wall - 1.0
         slot = Part.makeBox(p["usb_w"], wall + 2.0, slot_h,
                             V(x0, y0, slot_bottom))
