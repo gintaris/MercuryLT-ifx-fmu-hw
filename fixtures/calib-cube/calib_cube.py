@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-# Parametric IMU calibration cube for FreeCAD (1.0 or newer).
+# Parametric IMU calibration cube for FreeCAD 1.0 or newer. Uses only the
+# Part and Mesh modules that come with FreeCAD, no external packages.
 #
 # Copyright (c) 2026 Gintaris Zimnickas, Mercury LT
 # SPDX-License-Identifier: BSD-3-Clause
@@ -39,6 +40,12 @@ import Part
 # ---------------------------------------------------------------------------
 
 VARIANT = "psc3_rab7"   # "psc3_rab7" or "pse84"
+
+# Where the STEP/STL files go. Empty: an "out" folder next to this script
+# (or "calib_cube_out" in your home folder when the script is pasted into
+# the Python console). A full path, e.g. "C:/Users/me/Desktop/cube", is
+# used as is.
+OUTPUT_DIR = ""
 
 # ---------------------------------------------------------------------------
 # Common parameters (mm)
@@ -293,9 +300,13 @@ def main():
         elif arg == "pse84":
             variant = "pse84"
 
-    here = os.path.dirname(os.path.abspath(__file__)) \
-        if "__file__" in globals() else os.getcwd()
-    outdir = os.path.join(here, "out", variant)
+    if OUTPUT_DIR:
+        root = OUTPUT_DIR
+    elif "__file__" in globals():
+        root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
+    else:
+        root = os.path.join(os.path.expanduser("~"), "calib_cube_out")
+    outdir = os.path.join(root, variant)
     os.makedirs(outdir, exist_ok=True)
 
     base, lid, info = build(variant)
@@ -311,6 +322,7 @@ def main():
           % (VARIANTS[variant]["name"], info["side"], info["inner"],
              info["base_h"], info["board_bottom"], info["font"]))
     print("written to %s" % outdir)
+    print("DONE")
 
     # Show the result when run inside the FreeCAD GUI
     if App.GuiUp:
