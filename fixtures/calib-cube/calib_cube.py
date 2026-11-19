@@ -9,8 +9,8 @@
 # A cube-shaped holder with flat, mutually perpendicular outer faces. The
 # board lies inside with its axes parallel to the cube faces:
 #
-#   - it stands on its own stick-on rubber feet in shallow pockets in the
-#     floor (no screws: the board holes carry the feet);
+#   - it stands on its own stick-on rubber feet on the flat floor (no
+#     screws; the feet positions do not matter);
 #   - rails on the floor around the PCB outline locate it in X and Y;
 #   - pins under the lid press on bare PCB spots through small foam pads
 #     and hold it in Z.
@@ -67,8 +67,6 @@ COMMON = {
     "lid_screw_head_h": 3.2,
     "lid_pilot_d": 2.5,      # pilot hole in the base corners (M3 self-tapping)
     "lid_pilot_depth": 12.0,
-    "foot_pocket_depth": 1.0,  # pockets in the floor for the rubber feet
-    "foot_pocket_clear": 0.6,  # pocket diameter = foot diameter + this
     "rail_w": 2.0,           # XY locating rails around the PCB outline
     "rail_clear": 0.3,       # gap between PCB edge and rail
     "rail_above": 1.0,       # rail top above the PCB top surface
@@ -108,32 +106,42 @@ VARIANTS = {
         "board_l": 130.0,           # [A] outline 130.00 x 70.00, corners R2.54
         "board_w": 70.0,            # [A]
         "board_t": 1.6,             # ESTIMATE: nominal, not in [A]
-        # Bottom of the rubber feet to the top of the RAB7 stackable
-        # sockets [U].
+        # Bottom of the rubber feet to the top of the RAB7 [U].
         "stack_h": 29.0,
-        # Stick-on rubber feet. The board's three unplated 2.2 mm holes
-        # [A: soldermask top] carry feet; the 4th position is a likely
-        # corner. MEASURE diameter, height and positions.
-        "feet": [(3.97, 59.84), (3.97, 9.45), (114.02, 62.69),
-                 (114.02, 9.45)],
-        "foot_d": 8.0,              # MEASURE
-        # MEASURE. Default = stack_h - board_t - 18.64, where 18.64 is the
-        # stack above the EVK top: EVK Arduino sockets 8.5 [B: Wurth
-        # 61300811821 / 61301011821] + RAB7 PCB 1.64 [C] + RAB7 sockets
-        # 8.50 [C].
-        "foot_h": 8.76,
+        # Four stick-on rubber feet, cylindrical, about 8 mm, 5 mm high
+        # [U]. They stand on the flat floor; their positions do not matter.
+        # Note: 29 - 5 - 1.6 = 22.4 mm from the EVK top to the RAB7 top,
+        # 3.8 mm more than the vendor parts give (EVK sockets 8.5 [B:
+        # Wurth 61300811821 / 61301011821] + RAB7 PCB 1.64 [C] + RAB7
+        # sockets 8.50 [C] = 18.64); the measured total is used.
+        "foot_h": 5.0,
         # Parts that reach beyond the PCB outline and must fit in the
-        # cavity, as (x0, y0, x1, y1). RAB7 outline 72.30 x 71.78 [C],
-        # placed by its sockets on the Uno grid of the EVK headers J1-J4
-        # [A]; it overhangs both long EVK edges by about 0.9 mm.
-        "footprint": [(46.19, -0.95, 118.49, 70.83)],
-        # Hold-down: the lid pins press on the RAB7 PCB top (stack_h - 8.50
-        # [C]) at component-free spots [C: >= 6.5 mm from any part at the
-        # long-edge midpoints, >= 16 mm at the side points]. Not on the
-        # stackable sockets and not on parts.
-        "press": [(82.34, 2.05), (82.34, 67.83), (49.19, 34.94),
-                  (115.49, 34.94)],
-        "press_z": 29.0 - 8.50,     # contact surface above the feet bottom
+        # cavity, as (x0, y0, x1, y1).
+        "footprint": [
+            # RAB7 outline 72.30 x 71.78 [C] on the Uno grid of the EVK
+            # headers J1-J4 [A] overhangs both long EVK edges by 0.95 mm;
+            # photos [U] suggest more, so +3 mm all round. MEASURE.
+            (43.19, -3.95, 121.49, 73.83),
+            # DC jack J20 (PJ-102A [B]) at the USB-edge corner sticks out
+            # past the edge [U photo]; allowance 3 mm. MEASURE.
+            (116.0, 0.0, 133.0, 12.0),
+        ],
+        # Rail spans left out (wall: [(from, to)] along that wall, board
+        # coordinates): the DC jack corner. MEASURE.
+        "rail_skip": {"+Xc": [(0.0, 13.0)]},
+        # Hold-down pins: (x, y, contact height above the feet bottom).
+        # Only bare PCB, not the Arduino socket rows, the potentiometer R1,
+        # the jack or parts:
+        # - RAB7 PCB top (stack_h - 8.50 [C]) at the long-edge midpoints
+        #   (>= 6.5 mm from any part or socket [C]) and the two side
+        #   points (>= 16 mm [C]); the RAB7 corners carry BMP585, SHT40
+        #   and capacitors [C];
+        # - EVK PCB top (foot_h + board_t) at the mikroBUS end, which the
+        #   shield does not cover: bare spots >= 6.6 mm from any pad or
+        #   silkscreen [A].
+        "press": [(82.34, 2.05, 20.5), (82.34, 67.83, 20.5),
+                  (49.19, 34.94, 20.5), (115.49, 34.94, 20.5),
+                  (25.0, 35.0, 6.6), (4.5, 32.5, 6.6)],
         # KitProg3 USB-C J15 (Wurth 629722000214, top mount, right angle)
         # on the right short edge [A: pads x 121.9-128.5, y 22.4-37.3].
         "usb_wall": "+Xc",
@@ -159,13 +167,13 @@ VARIANTS = {
         "board_w": 56.0,            # MEASURE
         "board_t": 1.6,             # MEASURE
         "stack_h": 18.0,            # MEASURE: feet bottom to tallest part
-        "feet": [(3.5, 3.5), (81.5, 3.5), (3.5, 52.5), (81.5, 52.5)],
-        "foot_d": 8.0,              # MEASURE
         "foot_h": 4.0,              # MEASURE
         "footprint": [],
+        "rail_skip": {},
         # MEASURE: bare PCB spots near the corners; contact on the PCB top
-        "press": [(6.0, 6.0), (79.0, 6.0), (6.0, 50.0), (79.0, 50.0)],
-        "press_z": 4.0 + 1.6,       # foot_h + board_t
+        # (foot_h + board_t)
+        "press": [(6.0, 6.0, 5.6), (79.0, 6.0, 5.6), (6.0, 50.0, 5.6),
+                  (79.0, 50.0, 5.6)],
         "usb_wall": "-Xc",          # MEASURE: KitProg3 USB-C position
         "usb_at": 28.0,             # MEASURE
         "usb_w": 14.0,
@@ -228,14 +236,22 @@ def rails(p, c, bx0, by0, z0, z1):
     segs = []
 
     def span(a0, a1, wall_key):
-        """Split a rail span [a0, a1] around the USB opening."""
-        if wall_key != p["usb_wall"]:
-            return [(a0, a1)]
-        out = []
-        if usb_lo - a0 > 2.0:
-            out.append((a0, usb_lo))
-        if a1 - usb_hi > 2.0:
-            out.append((usb_hi, a1))
+        """Split a rail span [a0, a1] around the USB opening and skips."""
+        gaps = list(p.get("rail_skip", {}).get(wall_key, []))
+        if wall_key == p["usb_wall"]:
+            gaps.append((usb_lo, usb_hi))
+        out = [(a0, a1)]
+        for (g0, g1) in gaps:
+            nxt = []
+            for (s0, s1) in out:
+                if g1 <= s0 or g0 >= s1:
+                    nxt.append((s0, s1))
+                    continue
+                if g0 - s0 > 2.0:
+                    nxt.append((s0, g0))
+                if s1 - g1 > 2.0:
+                    nxt.append((g1, s1))
+            out = nxt
         return out
 
     for (a0, a1) in span(k, L - k, "-Yc"):
@@ -265,8 +281,8 @@ def build(variant_key):
         fx0, fy0 = min(fx0, x0), min(fy0, y0)
         fx1, fy1 = max(fx1, x1), max(fy1, y1)
 
-    # Heights, from the bottom of the feet (which sit in the floor pockets)
-    feet_z = wall - c["foot_pocket_depth"]
+    # Heights, from the bottom of the feet (which stand on the floor)
+    feet_z = wall
     pcb_top = feet_z + p["foot_h"] + p["board_t"]
     stack_top = feet_z + p["stack_h"]
 
@@ -286,13 +302,6 @@ def build(variant_key):
     # --- Base: box with cavity, open at the top -------------------------
     base = Part.makeBox(side, side, base_h)
     base = base.cut(Part.makeBox(inner, inner, base_h, V(wall, wall, wall)))
-
-    # Pockets for the rubber feet
-    pocket_r = (p["foot_d"] + c["foot_pocket_clear"]) / 2.0
-    for (fx, fy) in p["feet"]:
-        base = base.cut(Part.makeCylinder(pocket_r,
-                                          c["foot_pocket_depth"] + 0.01,
-                                          V(bx0 + fx, by0 + fy, feet_z)))
 
     # Rails up to just above the PCB top
     for seg in rails(p, c, bx0, by0, wall, pcb_top + c["rail_above"]):
@@ -333,13 +342,15 @@ def build(variant_key):
                               base_h - c["lid_lip_h"]))
     lid = lid.fuse(lip.cut(lip_hole))
 
-    # Pins end foam_t above the contact surface; a foam pad glued to the
-    # pin end gives the compliance.
-    pin_bottom = feet_z + p["press_z"] + c["foam_t"]
-    for (px, py) in p["press"]:
+    # Pins end foam_t above their contact surface; a foam pad glued to
+    # the pin end gives the compliance.
+    pin_bottom = base_h
+    for (px, py, pz) in p["press"]:
+        zb = feet_z + pz + c["foam_t"]
+        pin_bottom = min(pin_bottom, zb)
         lid = lid.fuse(Part.makeCylinder(c["press_d"] / 2.0,
-                                         base_h - pin_bottom + 0.01,
-                                         V(bx0 + px, by0 + py, pin_bottom)))
+                                         base_h - zb + 0.01,
+                                         V(bx0 + px, by0 + py, zb)))
 
     for (hx, hy) in lid_holes:
         lid = lid.cut(Part.makeCylinder(c["lid_screw_d"] / 2.0, wall,
@@ -411,7 +422,7 @@ def main():
                COMMON["stl_deflection"])
 
     print("%s: cube %.1f mm, inner %.1f mm; above the outside bottom: "
-          "feet %.1f, PCB top %.1f, stack top %.1f, pin ends %.1f mm; "
+          "feet %.1f, PCB top %.1f, stack top %.1f, lowest pin end %.1f mm; "
           "font %s"
           % (VARIANTS[variant]["name"], info["side"], info["inner"],
              info["feet_z"], info["pcb_top"], info["stack_top"],
