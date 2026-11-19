@@ -4,12 +4,14 @@ Parametrinis FreeCAD skriptas `calib_cube.py` sukuria kubo formos laikiklį plok
 
 | Variantas | Plokštė | Kubas (su numatytais matmenimis) |
 |---|---|---|
-| `psc3_rab7` | KIT_PSC3M5_EVK su Rutronik RAB7-SENSORFUSION skydu | 143 mm |
-| `pse84` | KIT_PSE84_AI | 98 mm |
+| `psc3_rab7` | KIT_PSC3M5_EVK su Rutronik RAB7-SENSORFUSION skydu | 147,6 mm |
+| `pse84` | KIT_PSE84_AI | 102,6 mm |
 
 Kubą sudaro dvi dalys:
-- **pagrindas** – atvira dėžė su stovais plokštės montavimo skylėms ir U išpjova USB kabeliui;
-- **dangtis** su centravimo bortu, prisukamas 4 varžtais M3.
+- **pagrindas** – atvira dėžė su U išpjova USB kabeliui. Dugne yra seklios kišenės plokštės guminėms kojelėms, aplink PCB kontūrą – XY centravimo bėgeliai;
+- **dangtis** su centravimo bortu, prisukamas 4 varžtais M3. Iš dangčio žemyn eina prispaudimo kaiščiai su putplasčio pagalvėlėmis: jie švelniai prispaudžia plokštę Z kryptimi.
+
+Plokštė **neprisukama**: jos skylėse yra užklijuotos guminės kojelės.
 
 Abi dalys spausdinamos be atramų.
 
@@ -47,10 +49,11 @@ Visi parametrai yra skripto viršuje.
 | Parametras | Kas tai |
 |---|---|
 | `board_l`, `board_w`, `board_t` | plokštės ilgis (ilgoji kraštinė), plotis, storis, mm |
-| `holes` | montavimo skylių centrai (x, y) |
-| `board_pilot_d`, `standoff_d` | skylės stovuose savisriegiui ir stovo skersmuo (jei nenurodyta – iš `COMMON`) |
-| `below_h` | aukščiausia detalė ar kaištis po plokšte (nustato stovų aukštį) |
-| `above_h` | aukščiausia detalė virš plokštės; PSC3 atveju – RAB7 skydo jungčių viršus |
+| `stack_h` | visas aukštis nuo kojelių apačios iki aukščiausio taško (PSC3 – RAB7 lizdų viršus) |
+| `feet` | guminių kojelių centrai (x, y) |
+| `foot_d`, `foot_h` | kojelės skersmuo ir aukštis |
+| `press` | prispaudimo taškai (x, y) – tik ant plikos PCB vietos, ne ant detalių ar lizdų |
+| `press_z` | prispaudžiamo paviršiaus aukštis nuo kojelių apačios |
 | `footprint` | už plokštės kontūro išsikišančių dalių (skydo) stačiakampiai (x0, y0, x1, y1) |
 | `usb_wall` | siena su KitProg3 USB-C: `"-Xc"`, `"+Xc"`, `"-Yc"`, `"+Yc"` |
 | `usb_at` | USB centras išilgai tos sienos (plokštės koordinatėmis) |
@@ -63,14 +66,22 @@ Visi parametrai yra skripto viršuje.
 | Dydis | Reikšmė | Šaltinis |
 |---|---|---|
 | EVK kontūras | 130,00 × 70,00 mm, kampai R2,54 | Infineon `KIT_PSC3M5_EVK_Rev5.0_artwork.pdf` (1:1, silkscreen top); mastelis patikrintas pagal 2,54 mm jungčių žingsnį |
-| Montavimo skylės | 3 × Ø2,2 mm (M2): (3,97; 59,84), (3,97; 9,45), (114,02; 62,69) | ten pat, soldermask top |
+| Skylės kojelėms | 3 × Ø2,2 mm: (3,97; 59,84), (3,97; 9,45), (114,02; 62,69). Kojelių vietos numatytos ten; 4-oji (114,02; 9,45) – spėjimas | ten pat, soldermask top |
+| Viso rinkinio aukštis | `stack_h` = 29 mm nuo kojelių apačios iki RAB7 viršaus | vartotojo matavimas 2026-11-19 |
 | KitProg3 USB-C (J15) | dešinė trumpoji kraštinė, centras y = 29,85 mm | ten pat, J15 aikštelės; tipas – BOM (Würth 629722000214) |
 | Arduino lizdai J1–J4 | 8,5 mm aukščio, eilės 48,30 mm atstumu | BOM (Würth 61300811821 / 61301011821); artwork |
 | RAB7 plokštė | 72,30 × 71,78 × 1,64 mm; ant EVK x 46,19–118,49, y −0,95–70,83 (išsikiša ~0,9 mm už abiejų ilgųjų kraštinių) | Rutronik `RAB7-SENSORFUSION_PCB.step`, Mechanical Drawing |
 | Skydo viršus virš EVK | 8,5 + 1,64 + 8,50 = 18,64 mm | BOM ir RAB7 STEP |
 | BMI323 (U6) | RAB7 centre, 3,0 × 2,5 mm, ilgoji pusė išilgai plokštės ilgosios kraštinės | RAB7 STEP |
+| Prispaudimo taškai | ant RAB7 PCB viršaus (`stack_h` − 8,50): ilgųjų kraštinių viduriai (≥ 6,5 mm iki artimiausios detalės) ir šonų taškai (≥ 16 mm). RAB7 kampuose yra detalės (BMP585, SHT40, kondensatoriai), todėl ten nespaudžiama | RAB7 STEP |
 
-Liko įvertinimai (`ESTIMATE`): EVK PCB storis 1,6 mm (nominalus) ir `below_h` = 4 mm (TH kaiščių ilgis po plokšte). Juos patikrinti slankmačiu.
+**Ką išmatuoti (`MEASURE`) prieš spausdinant `psc3_rab7`:**
+- `foot_d` – guminės kojelės skersmuo (numatyta 8 mm);
+- `foot_h` – kojelės aukštis, nuo stalo iki EVK PCB apačios. Numatyta 8,76 mm = 29 − 1,6 − 18,64; tai tik prielaida, kad EVK lizdai 8,5 mm aukščio;
+- `feet` – kojelių centrai, ypač 4-osios (jei jos nėra – ištrinti iš sąrašo);
+- `board_t` – EVK PCB storis (nominalus 1,6 mm).
+
+Jei kojelės ar plokštė stovi kitaip, užtenka pakeisti šiuos skaičius. Aukščiai skaičiuojami nuo kojelių apačios, todėl visas aukštis lieka `stack_h`.
 
 **`pse84` – visi matmenys yra įvertinimai (`MEASURE`).** Turimas Infineon PDF (630-60751-01) yra tik schema, be išdėstymo duomenų. Prieš spausdinant išmatuoti plokštę slankmačiu arba gauti KIT_PSE84_AI PCB design data paketą.
 
@@ -81,7 +92,10 @@ Liko įvertinimai (`ESTIMATE`): EVK PCB storis 1,6 mm (nominalus) ir `below_h` =
 | `wall` | sienos, dugno ir dangčio storis (numatyta 6 mm) |
 | `clearance` | tarpas aplink plokštę |
 | `fit_tol` | FDM tolerancija dangčio bortui (0,2–0,3 mm) |
-| `board_pilot_d` | numatytoji skylė stovuose (M2.5 savisriegiams; `psc3_rab7` – M2) |
+| `foot_pocket_depth`, `foot_pocket_clear` | kojelių kišenių gylis (1 mm) ir tarpas aplink kojelę (0,6 mm) |
+| `rail_w`, `rail_clear`, `rail_above`, `rail_corner_gap` | bėgelių storis (2 mm), tarpas iki PCB krašto (0,3 mm), aukštis virš PCB (1 mm), atstumas nuo PCB kampų (4 mm) |
+| `press_d` | prispaudimo kaiščių skersmuo (8 mm) |
+| `foam_t` | tarpas putplasčio pagalvėlei kaiščio gale (3 mm) |
 | `lid_*` | dangčio varžtai M3 |
 | `label_*` | etikečių dydis ir gylis |
 | `fonts` | šriftų failų sąrašas; pirmas rastas naudojamas etiketėms |
@@ -123,7 +137,7 @@ calib_cube_<variantas>_lid.step    calib_cube_<variantas>_lid.stl
 **Sėkmė.** Report view arba konsolėje (*View → Panels → Report view*) matomos eilutės:
 
 ```
-KIT_PSE84_AI: cube 98.0 mm, inner 86.0 mm, base height 92.0 mm, board bottom 11.0 mm above the outside bottom, font C:/Windows/Fonts/arialbd.ttf
+KIT_PSC3M5_EVK + RAB7-SENSORFUSION: cube 147.6 mm, inner 135.6 mm; above the outside bottom: feet 5.0, PCB top 15.4, stack top 34.0, pin ends 28.5 mm; font C:/Windows/Fonts/arialbd.ttf
 written to ...\out\pse84
 DONE
 ```
@@ -136,7 +150,7 @@ Aplanke yra 4 failai. STL atidarius slicer'yje matomas kubo pagrindas su graviru
 |---|---|
 | `Traceback (most recent call last): ...` | skripto klaida. Nukopijuoti visą tekstą ir perduoti programuotojui; dažniausia priežastis – neteisingas parametras, pvz., skylė už plokštės ribų. |
 | `WARNING: no font found, labels are not engraved` | kubas sukurtas be etikečių. Į `fonts` įrašyti esamo `.ttf` failo kelią. |
-| `WARNING: base shape is not valid` | geometrija netaisyklinga, dažniausiai dėl persidengiančių elementų. Patikrinti parametrus (pvz., USB išpjova kerta stovą). |
+| `WARNING: base shape is not valid` | geometrija netaisyklinga, dažniausiai dėl persidengiančių elementų. Patikrinti parametrus (pvz., kojelės kišenė kerta bėgelį). |
 | Nėra eilutės `DONE`, failų nėra | skriptas nepasiekė pabaigos; žiūrėti klaidą Report view. |
 
 ## 5. Ašys ir etiketės
@@ -169,13 +183,15 @@ Atspausdinus etiketes patikrinti su `sensortest accel0` ir, jei reikia, pakeisti
   - dangtis – etikete „+Z“ žemyn (STL failai jau orientuoti taip, kaip kubas surinktas, todėl slicer'yje dangtį reikia apversti).
 - **Atramų nereikia.**
 - **Po spausdinimo:** patikrinti sienų plokštumą liniuote. Jei kubas ant kurios nors sienos klibina, tą sieną lengvai nušlifuoti.
+- **Prispaudimo kaiščiai** dangtyje yra ilgi (PSC3 ~113 mm, Ø8 mm). Jei spausdinant jie svyruoja: padidinti `press_d` iki 10 mm, spausdinti lėčiau arba su „brim“.
 - **Tvirtinimas:**
-  - plokštė – savisriegiais į stovus: `psc3_rab7` – 3 × M2 × 8, `pse84` – M2.5. PSC3 skylė (114,02; 62,69) yra po RAB7 skydu, todėl EVK prisukti prieš uždedant skydą;
+  - plokštė nesukama; ji stovi ant savo kojelių kišenėse, XY ją laiko bėgeliai, Z – dangčio kaiščiai;
+  - ant kiekvieno kaiščio galo priklijuoti ~3 mm putplasčio (EVA, porolono) pagalvėlę Ø8 mm (`foam_t`); ji turi būti šiek tiek suspausta, uždėjus dangtį;
   - dangtis – 4 × M3 × 12 į kampų skyles.
 
 ## 7. Naudojimas
 
-1. Įdėti plokštę, prijungti USB kabelį ir išvesti jį per U išpjovą. Prisukti plokštę, uždėti ir prisukti dangtį.
+1. Įdėti plokštę su RAB7 skydu tarp bėgelių taip, kad kojelės įkristų į kišenes. Prijungti USB kabelį ir išvesti jį per U išpjovą. Uždėti dangtį (kaiščiai su putplasčiu remiasi į RAB7 PCB) ir prisukti. Patikrinti, ar plokštė nejuda.
 2. NuttX konsolėje paleisti `imucal` (nuttx-apps `testing/drivers/imucal`, įjungta `kit-psc3m5-evk:sensors`).
 3. Dėti kubą ant lygaus, horizontalaus paviršiaus ant programos nurodytos sienos ir spausti Enter. Kubo nejudinti, kabelio netempti.
 4. Programa atspausdina:
